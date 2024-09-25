@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WordPress DynTube Embed
  * Plugin URI: https://github.com/dyntube-com/wordpress-dyntube-embed
- * Description: A plugin to embed DynTube videos with optional user tracking by email and customizable video ratios.
- * Version: 1.2
+ * Description: A plugin to embed DynTube videos with support for both iframe and JavaScript embed codes.
+ * Version: 1.4
  * Author: DynTube Team
  * Author URI: https://www.dyntube.com
  */
@@ -20,25 +20,50 @@ class WordPressDynTubeEmbed {
     public function dyntube_shortcode($atts) {
         $atts = shortcode_atts(array(
             'iframe_id' => '',
+            'channel_key' => '',
             'track_email' => 'false',
             'ratio' => '16x9',
             'width' => '',
             'height' => '',
         ), $atts, 'dyntube');
 
-        if (empty($atts['iframe_id'])) {
-            return 'Error: DynTube iframe ID is required.';
+        if (empty($atts['iframe_id']) && empty($atts['channel_key'])) {
+            return 'Error: Either DynTube iframe ID or channel key is required.';
         }
 
-        $iframe_id = sanitize_text_field($atts['iframe_id']);
         $track_email = filter_var($atts['track_email'], FILTER_VALIDATE_BOOLEAN);
-        $ratio = $this->parse_ratio($atts['ratio']);
-        $width = $atts['width'] ? intval($atts['width']) : '';
-        $height = $atts['height'] ? intval($atts['height']) : '';
-
         $current_user = wp_get_current_user();
         $email = $current_user->user_email;
 
+        if (!empty($atts['channel_key'])) {
+            // JavaScript-based embed code
+            $channel_key = sanitize_text_field($atts['channel_key']);
+            $width = $atts['width'] ? intval($atts['width']) : '';
+            $output = $this->generate_js_embed($channel_key, $email, $width);
+        } else {
+            // Iframe-based embed code
+            $iframe_id = sanitize_text_field($atts['iframe_id']);
+            $ratio = $this->parse_ratio($atts['ratio']);
+            $width = $atts['width'] ? intval($atts['width']) : '';
+            $height = $atts['height'] ? intval($atts['height']) : '';
+            $output = $this->generate_iframe_embed($iframe_id, $track_email, $email, $ratio, $width, $height);
+        }
+
+        return $output;
+    }
+
+    private function generate_js_embed($channel_key, $email, $width) {
+        $output = '<script>!function(e,t,i){if(void 0===e._dyntube_v1_init){e._dyntube_v1_init=!0;var a=t.createElement("script");a.type="text/javascript",a.async=!0,a.src="https://embed.dyntube.com/v1.0/dyntube.js",t.getElementsByTagName("head")[0].appendChild(a)}}(window,document);</script>';
+        
+        $style = $width ? sprintf('style="max-width: %dpx; margin: 0 auto;"', $width) : '';
+        $output .= sprintf('<div %s>', $style);
+        $output .= sprintf('<div data-dyntube-key="%s" data-user-id="%s"></div>', esc_attr($channel_key), esc_attr($email));
+        $output .= '</div>';
+        
+        return $output;
+    }
+
+    private function generate_iframe_embed($iframe_id, $track_email, $email, $ratio, $width, $height) {
         $embed_url = "https://videos.dyntube.com/iframes/{$iframe_id}";
         if ($track_email && $email) {
             $embed_url .= "?email=" . urlencode($email);
