@@ -39,7 +39,7 @@ Iframe-based Embed Parameters:
 - height (Optional): Maximum video height in pixels
 
 JavaScript-based Embed Parameters:
-- channel_key (Required): DynTube channel or playlist key
+- channel_key (Required): DynTube channel key or video's channel key.
 - width (Optional): Maximum embed width in pixels
 - track_email (Optional): Enable/disable email tracking ("true" or "false"). Default: "false"
 
@@ -81,7 +81,7 @@ The channel_key can be acquired through:
 FAQ
 
 Q: What distinguishes iframe_id from channel_key?
-A: iframe_id is used for embedding individual videos via an iframe-based approach, while channel_key is used for embedding entire channels or playlists using a JavaScript-based approach.
+A: iframe_id is used for embedding individual videos via an iframe-based approach, while channel_key is used for embedding entire channels or videos using a JavaScript-based approach.
 
 Q: How does email tracking function?
 A: For iframe-based embeds with email tracking enabled, the plugin includes the current user's email address in the video embed URL, allowing DynTube to associate video views with specific users. JavaScript-based embeds handle email tracking automatically.

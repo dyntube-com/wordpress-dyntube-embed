@@ -51,7 +51,7 @@ WordPress DynTube Embed is a plugin that facilitates the integration of DynTube 
 
 | Parameter   | Required | Description                                       | Default |
 |-------------|----------|---------------------------------------------------|---------|
-| channel_key | Yes      | DynTube channel or playlist key                   | N/A     |
+| channel_key | Yes      | DynTube channel key or video's channel key                   | N/A     |
 | width       | No       | Maximum embed width in pixels                     | N/A     |
 | track_email | No       | Enable/disable email tracking ("true" or "false") | "false" |
 
@@ -105,7 +105,7 @@ The `channel_key` can be acquired through:
 ## FAQ
 
 1. **Q: What distinguishes iframe_id from channel_key?**
-   A: `iframe_id` is used for embedding individual videos via an iframe-based approach, while `channel_key` is used for embedding entire channels or playlists using a JavaScript-based approach.
+   A: `iframe_id` is used for embedding individual videos via an iframe-based approach, while `channel_key` is used for embedding entire channels or videos using a JavaScript-based approach.
 
 2. **Q: How does email tracking function?**
    A: For iframe-based embeds with email tracking enabled, the plugin includes the current user's email address in the video embed URL, allowing DynTube to associate video views with specific users. JavaScript-based embeds handle email tracking automatically.
