@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WordPress DynTube Embed
  * Plugin URI: https://github.com/dyntube-com/wordpress-dyntube-embed
- * Description: A plugin to embed DynTube videos with support for both iframe and JavaScript embed codes.
- * Version: 1.4
+ * Description: A plugin to embed DynTube videos with support for both iframe and JavaScript embed codes, including custom and user-based watermarks.
+ * Version: 1.5
  * Author: DynTube Team
  * Author URI: https://www.dyntube.com
  */
@@ -25,6 +25,7 @@ class WordPressDynTubeEmbed {
             'ratio' => '16x9',
             'width' => '',
             'height' => '',
+            'watermark' => '', // Can be 'user', custom text, or empty
         ), $atts, 'dyntube');
 
         if (empty($atts['iframe_id']) && empty($atts['channel_key'])) {
@@ -35,38 +36,64 @@ class WordPressDynTubeEmbed {
         $current_user = wp_get_current_user();
         $email = $current_user->user_email;
 
+        // Determine watermark
+        $watermark = $this->get_watermark($atts['watermark'], $current_user);
+
         if (!empty($atts['channel_key'])) {
             // JavaScript-based embed code
             $channel_key = sanitize_text_field($atts['channel_key']);
             $width = $atts['width'] ? intval($atts['width']) : '';
-            $output = $this->generate_js_embed($channel_key, $email, $width);
+            $output = $this->generate_js_embed($channel_key, $email, $width, $watermark);
         } else {
             // Iframe-based embed code
             $iframe_id = sanitize_text_field($atts['iframe_id']);
             $ratio = $this->parse_ratio($atts['ratio']);
             $width = $atts['width'] ? intval($atts['width']) : '';
             $height = $atts['height'] ? intval($atts['height']) : '';
-            $output = $this->generate_iframe_embed($iframe_id, $track_email, $email, $ratio, $width, $height);
+            $output = $this->generate_iframe_embed($iframe_id, $track_email, $email, $ratio, $width, $height, $watermark);
         }
 
         return $output;
     }
 
-    private function generate_js_embed($channel_key, $email, $width) {
+    private function get_watermark($watermark_attr, $current_user) {
+        if ($watermark_attr === 'user') {
+            return $current_user->user_email ?: $current_user->user_login;
+        } elseif (!empty($watermark_attr)) {
+            return $watermark_attr;
+        }
+        return '';
+    }
+
+    private function generate_js_embed($channel_key, $email, $width, $watermark) {
         $output = '<script>!function(e,t,i){if(void 0===e._dyntube_v1_init){e._dyntube_v1_init=!0;var a=t.createElement("script");a.type="text/javascript",a.async=!0,a.src="https://embed.dyntube.com/v1.0/dyntube.js",t.getElementsByTagName("head")[0].appendChild(a)}}(window,document);</script>';
         
         $style = $width ? sprintf('style="max-width: %dpx; margin: 0 auto;"', $width) : '';
         $output .= sprintf('<div %s>', $style);
-        $output .= sprintf('<div data-dyntube-key="%s" data-user-id="%s"></div>', esc_attr($channel_key), esc_attr($email));
+        $output .= sprintf('<div data-dyntube-key="%s" data-user-id="%s"%s></div>', 
+            esc_attr($channel_key), 
+            esc_attr($email),
+            $watermark ? sprintf(' data-watermark="%s"', esc_attr($watermark)) : ''
+        );
         $output .= '</div>';
         
         return $output;
     }
 
-    private function generate_iframe_embed($iframe_id, $track_email, $email, $ratio, $width, $height) {
+    private function generate_iframe_embed($iframe_id, $track_email, $email, $ratio, $width, $height, $watermark) {
         $embed_url = "https://videos.dyntube.com/iframes/{$iframe_id}";
+        $query_params = array();
+        
         if ($track_email && $email) {
-            $embed_url .= "?email=" . urlencode($email);
+            $query_params['email'] = urlencode($email);
+        }
+        
+        if (!empty($watermark)) {
+            $query_params['watermark'] = urlencode($watermark);
+        }
+        
+        if (!empty($query_params)) {
+            $embed_url .= '?' . http_build_query($query_params);
         }
 
         $style = $this->generate_container_style($ratio, $width, $height);
